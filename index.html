@@ -1,0 +1,1532 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>วิเคราะห์ปรากฏการณ์เบอร์แฝด — เลือกตั้ง 69</title>
+    <!-- Google Fonts: IBM Plex Sans Thai (Headings) + Sarabun (Body) -->
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #14213d;
+            --accent-color: #fca311; --accent-rgb: 252, 163, 17;
+            --base-color: #e5e5e5;
+            --white: #ffffff;
+        }
+
+        body { 
+            font-family: 'Sarabun', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+            background-color: var(--base-color);
+            color: var(--primary-color);
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'IBM Plex Sans Thai', 'Sarabun', sans-serif;
+            color: var(--primary-color);
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .text-primary-theme { color: var(--primary-color); }
+        .text-accent { color: var(--accent-color); }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(20, 33, 61, 0.08);
+            background-color: var(--white);
+            overflow: hidden;
+            margin-bottom: 0; /* Reset */
+        }
+        
+        .card-header {
+            background-color: var(--primary-color);
+            color: var(--white);
+            border-bottom: 4px solid var(--accent-color);
+            padding: 1rem 1.5rem;
+        }
+        
+        .card-header h4, .card-header h5 {
+            font-family: 'IBM Plex Sans Thai', 'Sarabun', sans-serif;
+            color: var(--white);
+            margin: 0;
+            font-weight: 600;
+        }
+        .card-header .text-muted { color: rgba(255,255,255,0.7); }
+
+        .stat-card { transition: transform 0.2s; border-top: 5px solid var(--primary-color); }
+        .stat-card:hover { transform: translateY(-5px); border-top-color: var(--accent-color); }
+        
+        .stat-value {
+            color: var(--accent-color);
+            font-weight: 700;
+            text-shadow: 2px 2px 0px rgba(20, 33, 61, 0.1);
+        }
+
+        .highlight-anomaly { 
+            background-color: rgba(var(--accent-rgb), 0.15); 
+            border-left: 5px solid var(--accent-color); 
+        }
+
+        .table thead th {
+            background-color: #f0f0f0;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            border-bottom: 2px solid var(--primary-color);
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            font-weight: 600;
+        }
+        .btn-primary:hover {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+            color: var(--primary-color);
+        }
+
+        canvas { max-height: 400px; }
+        .party-logo-sm { height: 24px; vertical-align: middle; border-radius: 50%; border: 1px solid #eee; background: white; }
+        .party-logo-md { height: 36px; vertical-align: middle; border-radius: 50%; border: 1px solid #eee; background: white; }
+        
+        /* Expandable Table */
+        .cursor-pointer { cursor: pointer; }
+        .detail-row { background-color: #fcfcfc; }
+        .detail-table { font-size: 0.9em; margin-bottom: 0; }
+        .detail-table thead th { background-color: transparent; color: #666; font-weight: 500; border-bottom: 1px solid #eee; }
+        .accordion-button::after { background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%2314213d'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e"); }
+        .rotate-icon { transition: transform 0.2s; }
+        .collapsed .rotate-icon { transform: rotate(-90deg); }
+        .theme-accent { color: var(--accent-color); }
+    </style>
+</head>
+<body>
+    <div class="container py-5">
+        <header class="mb-5 text-center">
+            <h1 class="display-4 fw-bold mb-3">วิเคราะห์ปรากฏการณ์ "เบอร์แฝด" เลือกตั้ง 69</h1>
+            <p class="lead text-secondary fw-normal">ศึกษาความสัมพันธ์ระหว่างหมายเลขผู้สมัคร ส.ส. เขต กับคะแนนบัญชีรายชื่อที่ตรงเบอร์กัน</p>
+        </header>
+
+        <!-- Educational Disclaimer -->
+        <div class="alert alert-light border-start border-4 border-info shadow-sm mb-5 text-start" role="alert" style="background-color: #f8f9fa;">
+            <div class="d-flex">
+                <div class="fs-4 me-3 text-info">ℹ️</div>
+                <div>
+                    <h5 class="alert-heading fw-bold">คำชี้แจง (Disclaimer)</h5>
+                    <p class="mb-2">
+                        เว็บไซต์นี้จัดทำขึ้นเพื่อ<strong>การศึกษาและวิเคราะห์ข้อมูลทางสถิติเท่านั้น</strong>
+                        โดยมีสมมติฐานว่า:
+                        <em>"เมื่อหมายเลขผู้สมัคร ส.ส. เขต ตรงกับหมายเลขพรรคบัญชีรายชื่อ (Twin Number) อาจทำให้ผู้ลงคะแนนบางส่วนกาเบอร์เดียวกันทั้งสองบัตรโดยไม่ตั้งใจ"</em>
+                    </p>
+                    <p class="mb-0 small text-secondary">
+                        * ข้อมูลทั้งหมดประมวลผลจากรายงานผลคะแนนอย่างไม่เป็นทางการ เพื่อนำเสนอรูปแบบที่น่าสนใจทางสถิติ
+                        <strong>ไม่ได้มีเจตนาชี้นำ กล่าวหา หรือลดทอนความน่าเชื่อถือของพรรคการเมืองใดๆ</strong>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Summary Stats -->
+        <div class="row g-4 mb-5">
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm border-0 stat-card">
+                    <div class="card-body text-center py-4">
+                        <h2 class="display-3 stat-value mb-2" id="total-anomalies">-</h2>
+                        <h5 class="text-secondary mb-0">เขตที่พบรูปแบบเบอร์แฝด</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm border-0 stat-card">
+                    <div class="card-body text-center py-4">
+                        <div id="top-party" class="display-6 fw-bold text-dark mb-2">-</div>
+                        <h5 class="text-secondary mb-0">พรรคที่ได้คะแนนเบอร์แฝดสูงสุด</h5>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm border-0 stat-card">
+                    <div class="card-body text-center py-4">
+                        <h2 class="display-3 stat-value mb-2" id="max-votes">-</h2>
+                        <h5 class="text-secondary mb-0">คะแนนเบอร์แฝดสูงสุดต่อเขต</h5>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Area Filter -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="d-flex align-items-center gap-3 bg-white p-3 rounded shadow-sm border-start border-4 border-warning">
+                    <span class="fs-4">🎯</span>
+                    <label for="areaFilterSelect" class="fw-bold mb-0 text-nowrap">เลือกกลุ่มพื้นที่ (Focus Group):</label>
+                    <select class="form-select" id="areaFilterSelect" onchange="applyAreaFilter()">
+                        <option value="">ทั้งหมด (All Data)</option>
+                    </select>
+                    <span class="text-secondary small ms-2" id="filterCountBadge"></span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hypothesis Section -->
+        <div class="card shadow-sm mb-5">
+            <div class="card-header">
+                <h4 class="mb-0">ปรากฏการณ์ "กาเบอร์เดิม" (กาบัตร 2 ใบเบอร์เดียวกัน)</h4>
+            </div>
+            <div class="card-body p-4">
+                <p class="card-text fs-5">เกิดอะไรขึ้นเมื่อคนเลือก <strong>ส.ส. เขต เบอร์ X</strong> แล้วกาบัตรบัญชีรายชื่อ <strong>เบอร์ X</strong> ด้วย?</p>
+                <div class="alert highlight-anomaly border-0 text-dark">
+                    <div class="d-flex">
+                        <div class="fs-2 me-3">💡</div>
+                        <div>
+                             <em><strong>สิ่งที่พบ:</strong> พรรคบัญชีรายชื่อที่มีฐานเสียงน้อย แต่ได้เบอร์เดียวกับ ส.ส. ที่ชนะในเขตนั้น กลับมีคะแนนสูงขึ้นอย่างชัดเจน เมื่อเทียบกับค่าเฉลี่ยปกติของพรรคนั้นๆ</em>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graphs Section -->
+        <div class="row mb-5">
+            <!-- Graph 1 -->
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0">10 อันดับเขตที่มีคะแนนเบอร์แฝดสูงสุด</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-secondary small mb-4">
+                            10 เขตเลือกตั้งที่พรรคบัญชีรายชื่อเบอร์แฝดได้คะแนนสูงสุด
+                            <br>(สีของแท่งกราฟแบ่งตาม <strong>หมายเลขเบอร์ผู้สมัคร</strong>)
+                        </p>
+                        <canvas id="topAreaChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <!-- Graph 2 -->
+            <div class="col-lg-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0">การกระจายตัวตามหมายเลขเบอร์</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-secondary small mb-4">
+                            สัดส่วนว่า <strong>"เบอร์"</strong> หมายเลขใด (1-9) 
+                            ที่เป็นคู่แฝดแล้วเกิดปรากฏการณ์คะแนนพุ่งบ่อยที่สุด
+                        </p>
+                        <canvas id="numberDistChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Correlation Section -->
+        <div class="card shadow-sm mb-5">
+            <div class="card-header">
+                <h4 class="mb-0">ความสัมพันธ์: คะแนน ส.ส. เขต vs คะแนนพรรคแฝด</h4>
+            </div>
+            <div class="card-body">
+                <p class="card-text text-secondary mb-4">
+                    Scatter Plot แสดงความสัมพันธ์ระหว่าง <strong>คะแนนที่ ส.ส. เขตได้รับ (แกน X)</strong> กับ <strong>คะแนนที่พรรคบัญชีรายชื่อเบอร์เดียวกันได้รับ (แกน Y)</strong>
+                    <br>
+                    <small>หากมีความสัมพันธ์เชิงเส้น จุดต่างๆ ควรจะเรียงตัวขึ้นไปในทิศทางเดียวกัน (ยิ่งคะแนน ส.ส. มาก คะแนนแฝดก็ยิ่งมากตาม)</small>
+                </p>
+                <div style="height: 500px;">
+                    <canvas id="correlationChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Lucky Numbers Section -->
+        <div class="card shadow-sm mb-5">
+            <div class="card-header">
+                <h4 class="mb-0">คะแนนรวมบัญชีรายชื่อแยกตามหมายเลขพรรค</h4>
+            </div>
+            <div class="card-body">
+                <p class="card-text text-secondary mb-4">
+                    คะแนนรวมทั้งประเทศของแต่ละพรรค เรียงตาม <strong>หมายเลขพรรค (1–N)</strong>
+                    <br>
+                    <small>สังเกตการกระจุกตัวของคะแนนในพรรคเบอร์ 1–15 (สีส้ม) เทียบกับพรรคเบอร์สองหลัก (สีเทา)</small>
+                </p>
+                <p class="card-text text-secondary mb-4">
+                    <small>พรรคที่ถูกละเว้นจากกราฟ: เบอร์ 6, 9, 11, 27, 33, 37, 42, 46 เนื่องจากเป็นพรรคที่มีฐานเสียงสูงอยู่แล้ว</small>
+                </p>
+                <div style="height: 400px;">
+                    <canvas id="luckyNumberChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ratio Analysis Section -->
+        <div class="card shadow-sm mb-5">
+            <div class="card-header">
+                <h4 class="mb-0">เปรียบเทียบคะแนน PL vs MP ของเบอร์ 1–15</h4>
+            </div>
+            <div class="card-body">
+                <p class="card-text text-secondary mb-4">
+                    เปรียบเทียบ <strong>คะแนนบัญชีรายชื่อ (PL)</strong> vs <strong>คะแนนเขต (MP)</strong> ของพรรคเบอร์ 1–15 (ยกเว้น 6, 9, 11)
+                    <br>
+                    <small>สังเกตว่าพรรคเหล่านี้ได้คะแนนบัญชีรายชื่อมากกว่าคะแนนในเขตหลายเท่าตัว</small>
+                </p>
+                <div style="height: 400px;">
+                    <canvas id="ratioChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Forgotten Candidates Section (New) -->
+        <div class="card shadow-sm mb-5">
+            <div class="card-header bg-warning-subtle">
+                <h4 class="mb-0 text-dark">ผู้สมัครที่ถูกลืม (MP น้อย / PL พรรคเยอะ)</h4>
+            </div>
+            <div class="card-body">
+                <p class="card-text text-secondary mb-3">
+                    เขตที่ผู้สมัคร ส.ส. ได้คะแนนน้อยมาก แต่พรรคกลับได้คะแนนบัญชีรายชื่อสูงในเขตเดียวกัน
+                    (สมมติฐาน: ผู้ลงคะแนนกาเบอร์พรรคตามเบอร์ผู้ชนะเขตอื่น โดยไม่ได้ตั้งใจเลือกพรรคนี้จริงๆ)
+                    <br>
+                    <small>คัดเฉพาะเขตที่มีผู้สมัครจริง (MP Vote > 0) เรียงตามอัตราส่วน (Ratio)</small>
+                </p>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle" id="forgottenTable">
+                        <thead class="table-light">
+                            <tr>
+                                <th>พื้นที่ (เขต)</th>
+                                <th>พรรคแฝด (เบอร์)</th>
+                                <th class="text-end">คะแนน ส.ส. (MP)</th>
+                                <th class="text-end">คะแนนพรรค (PL)</th>
+                                <th class="text-end">เท่าตัว (Multiplier)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- JS populated -->
+                        </tbody>
+                    </table>
+                    <div class="text-center mt-3">
+                        <button class="btn btn-outline-primary btn-sm" id="btnShowMoreForgotten">แสดงเพิ่มเติม</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MP wins, but PL was too low -->
+        <div class="card shadow-sm mb-5">
+            <div class="card-header bg-danger-subtle">
+                <h4 class="mb-0 text-dark">เขตที่ผู้ชนะ "คะแนนพรรคต่ำกว่าพรรคแฝด"</h4>
+            </div>
+            <div class="card-body">
+                <p class="card-text text-secondary mb-3">
+                    เขตที่ <strong>พรรคของผู้ชนะ ส.ส. เขต</strong> กลับได้คะแนนบัญชีรายชื่อ <strong>น้อยกว่า</strong> พรรคแฝดที่มีเบอร์เดียวกับผู้ชนะ
+                    <br>
+                    <small>บ่งชี้ว่าผู้ลงคะแนนอาจตั้งใจกาให้พรรคผู้ชนะ แต่อาจกาไปถูกพรรคแฝดแทน ทำให้พรรคตัวจริงเสียคะแนน</small>
+                </p>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle" id="weakWinnerTable">
+                        <thead>
+                            <tr>
+                                <th>เขตเลือกตั้ง</th>
+                                <th>ผู้ชนะ (MP)</th>
+                                <th class="text-end">คะแนนผู้ชนะ (MP)</th>
+                                <th class="text-end">คะแนนพรรคผู้ชนะ (PL)</th>
+                                <th class="text-end">คะแนนพรรคแฝด (PL)</th>
+                                <th class="text-end">ผลต่าง (Lost Votes?)</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Comparison Section -->
+        <div class="card shadow-sm mb-5">
+            <div class="card-header">
+                <h4 class="mb-0">เปรียบเทียบผลกระทบ: เขตที่มี vs ไม่มี "เบอร์แฝด"</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-secondary mb-4">
+                    กราฟเปรียบเทียบ <strong>คะแนนเฉลี่ย</strong> ของพรรคบัญชีรายชื่อ ระหว่าง <span class="badge bg-danger">เขตที่มีเบอร์แฝด</span> (ผู้ชนะ ส.ส. เบอร์เดียวกับพรรค) กับ <span class="badge bg-secondary">เขตทั่วไป</span>
+                </p>
+                <canvas id="comparisonChart" style="max-height: 450px;"></canvas>
+            </div>
+            
+            <!-- Comparison Table -->
+            <div class="card-footer bg-white p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="comparisonTable">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">พรรคบัญชีรายชื่อ (เบอร์ที่ตรงกัน)</th>
+                                <th class="text-center">คะแนนเฉลี่ย (พื้นที่แฝด)</th>
+                                <th class="text-center">คะแนนเฉลี่ย (พื้นที่ปกติ)</th>
+                                <th class="text-end pe-4">ส่วนต่าง</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div class="text-center py-2 text-secondary small">
+                    * พื้นที่แฝด = เขตที่ ส.ส. ผู้ชนะเป็นพรรคอื่น แต่มีเบอร์เดียวกับพรรคบัญชีรายชื่อนี้
+                </div>
+            </div>
+        </div>
+
+        <!-- Map Section -->
+        <div class="card shadow-sm mb-5">
+            <div class="card-header">
+                <h4 class="mb-0">แผนที่แสดงคะแนนเบอร์แฝดรายจังหวัด</h4>
+            </div>
+            <div class="card-body p-0">
+                <div id="provinceMap" style="height: 500px; width: 100%; background: #fff;"></div>
+            </div>
+            <div class="card-footer bg-white">
+                <div class="d-flex align-items-center justify-content-center small text-secondary gap-3">
+                    <span class="d-flex align-items-center"><span style="display:inline-block;width:12px;height:12px;background:#BCE784;margin-right:4px;border:1px solid #ccc"></span> น้อย</span>
+                    <span class="d-flex align-items-center"><span style="display:inline-block;width:12px;height:12px;background:#FFD60A;margin-right:4px;border:1px solid #ccc"></span> ปานกลาง</span>
+                    <span class="d-flex align-items-center"><span style="display:inline-block;width:12px;height:12px;background:#f03b20;margin-right:4px;border:1px solid #ccc"></span> สูง</span>
+                    <span class="d-flex align-items-center"><span style="display:inline-block;width:12px;height:12px;background:#800026;margin-right:4px;border:1px solid #ccc"></span> สูงมาก</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- New Aggregation Section -->
+        <div class="row mb-5">
+            <!-- Top Provinces -->
+            <div class="col-lg-6 mb-4 mb-lg-0">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0">10 จังหวัดที่มีคะแนนเบอร์แฝดสูงสุด</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" id="provinceTable">
+                                <thead>
+                                    <tr>
+                                        <th class="ps-4">จังหวัด</th>
+                                        <th class="text-end">จำนวนเขต</th>
+                                        <th class="text-end pe-4">คะแนนแฝดรวม</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Top MP Parties -->
+             <div class="col-lg-6">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-header">
+                        <h5 class="mb-0">พรรค ส.ส. เขตที่มักเจอ "กาเบอร์เดิม"</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" id="mpPartyTable">
+                                <thead>
+                                    <tr>
+                                        <th class="ps-4">พรรค ส.ส. เขต</th>
+                                        <th class="text-end">จำนวนเขต</th>
+                                        <th class="text-end pe-4">คะแนนแฝดรวม</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Party Summary Table -->
+        <div class="card shadow-sm mb-5">
+            <div class="card-header">
+                <h4 class="mb-0">สรุปพรรคบัญชีรายชื่อที่ได้คะแนนเบอร์แฝดสูงสุด</h4>
+            </div>
+            <div class="card-body">
+                <p class="text-secondary mb-3">รวมสถิติพรรคบัญชีรายชื่อที่ได้รับคะแนนเบอร์แฝดรวมสูงสุด 10 อันดับแรกจากทั่วประเทศ</p>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="partySummaryTable">
+                        <thead>
+                            <tr>
+                                <th class="text-center" style="width: 60px;">#</th>
+                                <th>พรรคบัญชีรายชื่อ</th>
+                                <th class="text-end">จำนวนเขตที่พบ</th>
+                                <th class="text-end" style="width: 20%">คะแนนที่สงสัยรวม</th>
+                                <th class="text-end">เฉลี่ยต่อเขต</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detail Table -->
+        <div class="card shadow-sm mb-5">
+            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <h4 class="mb-0">รายละเอียดคะแนนเบอร์แฝดทั้งหมด</h4>
+                <span class="badge bg-white text-dark border">เรียงตามคะแนนที่น่าสงสัยมากไปน้อย</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="anomalyTable">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">จังหวัด / เขต</th>
+                                <th>ส.ส. เขตที่ชนะ</th>
+                                <th>พรรคบัญชีรายชื่อ (เบอร์เดียวกัน)</th>
+                                <th>อันดับ</th>
+                                <th>คะแนนพรรคแฝด</th>
+                                <th>ส่วนต่างจากปกติ (+%)</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer bg-white text-center py-3">
+                <button id="loadMoreBtn" class="btn btn-primary px-4" style="display: none;" onclick="renderTableBatch()">
+                    โหลดข้อมูลเพิ่มเติม
+                </button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let allAnomalies = [];
+    let originalAnomalies = [];
+    let displayedCount = 0;
+    const ITEMS_PER_PAGE = 20;
+    
+    // Data mappings
+    const partyMap = {};
+    const provinceMap = {};
+
+    // Defined Color Palette for Numbers 1-10
+    const numberColors = {
+        1: '#ef476f', // Pink/Red
+        2: '#fca311', // Orange/Gold (Theme Accent)
+        3: '#06d6a0', // Green
+        4: '#118ab2', // Blue
+        5: '#073b4c', // Dark Blue
+        6: '#9d4edd', // Purple
+        7: '#ffbe0b', // Yellow
+        8: '#fb5607', // Orange Red
+        9: '#3a86ff', // Soft Blue
+        0: '#8338ec'  // Violet
+    };
+
+    let map;
+    
+    // Mapping from GeoJSON English Name -> Province ID (Standard MOI Codes)
+    const geoNameMapping = {
+        "Bangkok Metropolis": "10", "Samut Prakan": "11", "Nonthaburi": "12", "Pathum Thani": "13", "Phra Nakhon Si Ayutthaya": "14",
+        "Ang Thong": "15", "Lop Buri": "16", "Sing Buri": "17", "Chai Nat": "18", "Saraburi": "19",
+        "Chon Buri": "20", "Rayong": "21", "Chanthaburi": "22", "Trat": "23", "Chachoengsao": "24",
+        "Prachin Buri": "25", "Nakhon Nayok": "26", "Sa Kaeo": "27",
+        "Nakhon Ratchasima": "30", "Buri Ram": "31", "Surin": "32", "Si Sa Ket": "33", "Ubon Ratchathani": "34",
+        "Yasothon": "35", "Chaiyaphum": "36", "Amnat Charoen": "37", "Bueng Kan": "38", "Nong Bua Lam Phu": "39",
+        "Khon Kaen": "40", "Udon Thani": "41", "Loei": "42", "Nong Khai": "43", "Maha Sarakham": "44",
+        "Roi Et": "45", "Kalasin": "46", "Sakon Nakhon": "47", "Nakhon Phanom": "48", "Mukdahan": "49",
+        "Chiang Mai": "50", "Lamphun": "51", "Lampang": "52", "Uttaradit": "53", "Phrae": "54",
+        "Nan": "55", "Phayao": "56", "Chiang Rai": "57", "Mae Hong Son": "58",
+        "Nakhon Sawan": "60", "Uthai Thani": "61", "Kamphaeng Phet": "62", "Tak": "63", "Sukhothai": "64",
+        "Phitsanulok": "65", "Phichit": "66", "Phetchabun": "67",
+        "Ratchaburi": "70", "Kanchanaburi": "71", "Suphan Buri": "72", "Nakhon Pathom": "73", "Samut Sakhon": "74",
+        "Samut Songkhram": "75", "Phetchaburi": "76", "Prachuap Khiri Khan": "77",
+        "Nakhon Si Thammarat": "80", "Krabi": "81", "Phangnga": "82", "Phuket": "83", "Surat Thani": "84",
+        "Ranong": "85", "Chumphon": "86",
+        "Songkhla": "90", "Satun": "91", "Trang": "92", "Phatthalung": "93", "Pattani": "94", "Yala": "95", "Narathiwat": "96"
+    };
+
+    async function initMap(provinceStatsArray) {
+        if (!document.getElementById('provinceMap')) return;
+
+        // Convert stats array to dictionary object for matching
+        // provinceStatsArray items look like: { id: "30", name: "...", total_ghost_votes: 1234 }
+        const statsMap = {};
+        provinceStatsArray.forEach(p => {
+            if (p.id) statsMap[p.id] = p;
+        });
+
+        // Initialize Leaflet
+        // Center on Thailand
+        map = L.map('provinceMap').setView([13.0, 101.5], 5);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 19
+        }).addTo(map);
+
+        try {
+            // const res = await fetch('https://raw.githubusercontent.com/apisit/thailand.json/master/thailand.json');
+            const res = await fetch('thailand.json');
+
+            const geoData = await res.json();
+
+            // Create GeoJSON Layer
+            const provinceLayer = L.geoJson(geoData, {
+                style: (feature) => {
+                    const engName = feature.properties.name;
+                    const id = geoNameMapping[engName];
+                    const data = statsMap[id];
+                    const ghostVotes = data ? data.total_ghost_votes : 0;
+                    
+                    return {
+                        fillColor: getColor(ghostVotes),
+                        weight: 1,
+                        opacity: 1,
+                        color: 'white',
+                        dashArray: '3',
+                        fillOpacity: 0.7
+                    };
+                },
+                onEachFeature: (feature, layer) => {
+                    const engName = feature.properties.name;
+                    const id = geoNameMapping[engName];
+                    const data = statsMap[id];
+                    
+                    if (data) {
+                        layer.bindTooltip(`
+                            <div class="text-center">
+                                <strong>${data.name}</strong><br>
+                                <span class="text-danger">คะแนนเบอร์แฝด: ${data.total_ghost_votes.toLocaleString()}</span><br>
+                                <span class="text-secondary small">(พบใน ${data.count} เขต)</span>
+                            </div>
+                        `);
+                        
+                        layer.on({
+                            mouseover: (e) => {
+                                const l = e.target;
+                                l.setStyle({ weight: 3, color: '#666', dashArray: '', fillOpacity: 0.9 });
+                                l.bringToFront();
+                            },
+                            mouseout: (e) => {
+                                provinceLayer.resetStyle(e.target);
+                            }
+                        });
+                    }
+                }
+            }).addTo(map);
+
+        } catch (e) {
+            console.error("Map Load Error", e);
+            document.getElementById('provinceMap').innerHTML = `<div class="d-flex justify-content-center align-items-center h-100 text-secondary">โหลดแผนที่ไม่ได้</div>`;
+        }
+    }
+
+    function getColor(d) {
+        return d > 30000 ? '#800026' :
+               d > 20000 ? '#BD0026' :
+               d > 10000 ? '#E31A1C' :
+               d > 5000  ? '#FC4E2A' :
+               d > 2000  ? '#FD8D3C' :
+               d > 1000  ? '#FFD60A' : // Yellow-ish
+               d > 0     ? '#BCE784' : // Green-ish
+                           '#E6F5D0';
+    }
+
+    let focusedAreas = null;
+
+    async function loadData() {
+        try {
+            const [reportRes, provinceRes, mpPartyRes, comparisonRes, commonRes, partyRes, nationwideRes, focusedRes] = await Promise.all([
+                fetch('data/anomaly_report.json'),
+                fetch('data/province_stats.json'),
+                fetch('data/mp_party_stats.json'),
+                fetch('data/party_comparison_stats.json'),
+                fetch('data/common-data.json'),
+                fetch('data/party-data.json'),
+                fetch('data/nationwide_party_stats.json'),
+                fetch('data/focused-area.json')
+            ]);
+        //   const [reportRes, provinceRes, mpPartyRes, comparisonRes, commonRes, partyRes, nationwideRes, focusedRes] = await Promise.all([
+        //         fetch('https://anwam.github.io/election_69_analyzer/data/anomaly_report.json'),
+        //         fetch('https://anwam.github.io/election_69_analyzer/data/province_stats.json'),
+        //         fetch('https://anwam.github.io/election_69_analyzer/data/mp_party_stats.json'),
+        //         fetch('https://anwam.github.io/election_69_analyzer/data/party_comparison_stats.json'),
+        //         fetch('https://anwam.github.io/election_69_analyzer/data/common-data.json'),
+        //         fetch('https://anwam.github.io/election_69_analyzer/data/party-data.json'),
+        //         fetch('https://anwam.github.io/election_69_analyzer/data/nationwide_party_stats.json'),
+        //         fetch('https://anwam.github.io/election_69_analyzer/data/focused-area.json')
+        //     ]);
+            
+            // Check if focused-area exists (it might not on old deployments)
+            if (focusedRes.ok) {
+                focusedAreas = await focusedRes.json();
+                initFilterDropdown();
+            }
+
+            const reportData = await reportRes.json();
+            const provinceData = await provinceRes.json();
+            const mpPartyData = await mpPartyRes.json();
+            const comparisonData = await comparisonRes.json();
+            const commonData = await commonRes.json();
+            const partyData = await partyRes.json();
+            const nationwideData = await nationwideRes.json();
+            
+            // Merge for aggregations
+            const combinedData = {
+                ...reportData,
+                province_stats: provinceData.province_stats,
+                mp_party_stats: mpPartyData.mp_party_stats,
+                comparison_stats: comparisonData.comparison_stats
+            };
+            
+            // Process metadata
+            processCommonData(commonData);
+            processPartyData(partyData);
+
+            originalAnomalies = reportData.anomalies;
+            allAnomalies = [...originalAnomalies];
+
+            renderDashboard(reportData);
+            renderAggregations(combinedData);
+            renderComparison(comparisonData.comparison_stats);
+            renderPartySummary(allAnomalies);
+            renderTableBatch();
+            
+            // Render Lucky Number Chart
+            renderLuckyNumberChart(nationwideData.raw_parties);
+            renderRatioChart(nationwideData.raw_parties);
+            renderForgottenCandidates(allAnomalies);
+            renderWeakWinnerPL(allAnomalies);
+
+            // Init Map (Non-blocking)
+            initMap(provinceData.province_stats);
+            
+        } catch (error) {
+            console.error('Error loading data:', error);
+            document.body.innerHTML += `<p style="color:red">เกิดข้อผิดพลาดในการโหลดข้อมูล (โปรดตรวจสอบว่าไฟล์ JSON ทั้งหมดมีอยู่จริง)</p>`;
+        }
+    }
+
+    function initFilterDropdown() {
+        if (!focusedAreas || !focusedAreas.groups) return;
+        
+        const select = document.getElementById('areaFilterSelect');
+        const tagNames = {
+            "hot-area": "🔥 พื้นที่เดือด (Hot Areas)",
+            "mueang": "🏙️ อำเภอเมือง (Mueang Districts)",
+            "powerhouse": "⚡ บ้านใหญ่/ตระกูลดัง (Powerhouses)",
+            "thailand-cambodia-border": "🇰🇭 ชายแดนไทย-กัมพูชา",
+            "three-southern-border": "🕌 3 จังหวัดชายแดนใต้"
+        };
+
+        focusedAreas.groups.forEach(g => {
+            const opt = document.createElement('option');
+            opt.value = g.tag;
+            opt.textContent = tagNames[g.tag] || g.tag;
+            select.appendChild(opt);
+        });
+    }
+
+    function applyAreaFilter() {
+        const tag = document.getElementById('areaFilterSelect').value;
+        const countBadge = document.getElementById('filterCountBadge');
+        
+        // 1. Filter Data
+        if (!tag) {
+            allAnomalies = [...originalAnomalies];
+            countBadge.innerText = '';
+        } else {
+            const group = focusedAreas.groups.find(g => g.tag === tag);
+            if (group) {
+                // Focused Area uses 'AREA-1001', Anomaly uses '1001'
+                const codes = new Set(group.areaCodes.map(c => c.replace('AREA-', '')));
+                allAnomalies = originalAnomalies.filter(a => codes.has(a.area_code));
+                countBadge.innerText = `(${allAnomalies.length} เขต)`;
+            }
+        }
+
+        // 2. Reset Canvases for Dashboard Charts (Brute force destroy to prevent Chart.js overlap)
+        ['topAreaChart', 'numberDistChart', 'correlationChart'].forEach(id => {
+             const oldCanvas = document.getElementById(id);
+             if (oldCanvas) {
+                 const parent = oldCanvas.parentNode;
+                 const newCanvas = document.createElement('canvas');
+                 newCanvas.id = id;
+                 oldCanvas.remove();
+                 parent.appendChild(newCanvas);
+             }
+        });
+
+        // 3. Reset Table
+        document.querySelector('#anomalyTable tbody').innerHTML = '';
+        displayedCount = 0;
+
+        // 4. Re-render
+        renderDashboard({ anomalies: allAnomalies });
+        renderPartySummary(allAnomalies);
+        renderForgottenCandidates(allAnomalies);
+        renderWeakWinnerPL(allAnomalies);
+        renderTableBatch();
+    }
+
+    function processCommonData(data) {
+        if (data.provinces) {
+            data.provinces.forEach(p => {
+                const id = p.code.replace('PROVINCE-', '');
+                provinceMap[id] = p.name;
+            });
+        }
+    }
+
+    function processPartyData(data) {
+        if (data.parties) {
+            data.parties.forEach(p => {
+                partyMap[p.code] = {
+                    name: p.name,
+                    color: p.colorPrimary || '#666666'
+                };
+            });
+        }
+    }
+    
+    function getProvinceName(areaCode) {
+        const provinceId = areaCode.substring(0, areaCode.length - 2);
+        const districtId = parseInt(areaCode.substring(areaCode.length - 2), 10);
+        return `${provinceMap[provinceId] || 'ไม่ทราบจังหวัด'} เขต ${districtId}`;
+    }
+
+    function getPartyInfo(code) {
+        return partyMap[code] || { name: code, color: '#666666' };
+    }
+
+    function renderComparison(stats) {
+        // Sort by difference
+        stats.sort((a,b) => b.diff - a.diff);
+        
+        // Take top 7 for readability
+        const topStats = stats.slice(0, 7);
+        
+        const labels = topStats.map(s => {
+            const p = getPartyInfo(s.party_code);
+            return `${p.name} (เบอร์ ${s.party_number})`;
+        });
+        
+        const twinData = topStats.map(s => s.avg_twin_votes);
+        const nonTwinData = topStats.map(s => s.avg_non_twin_votes);
+        
+        new Chart(document.getElementById('comparisonChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'เฉลี่ยในเขตที่เป็น "เบอร์แฝด"',
+                        data: twinData,
+                        backgroundColor: '#ef476f', // Pink/Red
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'เฉลี่ยในเขตทั่วไป',
+                        data: nonTwinData,
+                        backgroundColor: '#e5e5e5', // Grey
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom' },
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: (ctx) => {
+                                const idx = ctx.dataIndex;
+                                const item = topStats[idx];
+                                if (ctx.datasetIndex === 0) return `(จาก ${item.twin_area_count} เขต)`;
+                                return `(จาก ${item.non_twin_area_count} เขต)`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'คะแนนเฉลี่ย (Votes)' }
+                    },
+                    x: {
+                        ticks: {
+                            font: { size: 11 }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Populate Table
+        const tableBody = document.querySelector('#comparisonTable tbody');
+        tableBody.innerHTML = '';
+        
+        topStats.forEach(s => {
+            const p = getPartyInfo(s.party_code);
+            const growth = s.avg_non_twin_votes > 0 ? ((s.diff / s.avg_non_twin_votes) * 100).toFixed(0) : 0;
+            
+            const row = `<tr>
+                <td class="ps-4">
+                    <div class="d-flex align-items-center">
+                        <img src="img/${s.party_code}.webp" class="party-logo-sm me-2" onerror="this.style.display='none'"> 
+                        <span class="fw-bold text-primary-theme">${p.name}</span>
+                        <span class="badge bg-light text-dark border ms-2">เบอร์ ${s.party_number}</span>
+                    </div>
+                </td>
+                <td class="text-center">
+                    <span class="fw-bold text-danger">${s.avg_twin_votes.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                    <div class="small text-muted">(${s.twin_area_count} เขต)</div>
+                </td>
+                <td class="text-center">
+                    <span class="text-secondary">${s.avg_non_twin_votes.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                    <div class="small text-muted">(${s.non_twin_area_count} เขต)</div>
+                </td>
+                <td class="text-end pe-4">
+                    <span class="fw-bold text-success">+${s.diff.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                    <span class="badge bg-success bg-opacity-10 text-success ms-1">+${growth}%</span>
+                </td>
+            </tr>`;
+            tableBody.innerHTML += row;
+        });
+    }
+
+    function renderAggregations(data) {
+        // Render Provinces
+        const provBody = document.querySelector('#provinceTable tbody');
+        if (data.province_stats) {
+            data.province_stats.slice(0, 10).forEach((p, idx) => {
+                const rowId = `prov-detail-${idx}`;
+                const areasHtml = p.areas.map(a => `
+                    <tr>
+                        <td class="ps-4">เขต ${a.area_code.slice(-2)}</td>
+                        <td>${getPartyInfo(a.mp_winner_party).name} (เบอร์ ${a.mp_number})</td>
+                        <td class="text-end fw-bold theme-accent">${a.ghost_votes.toLocaleString()}</td>
+                    </tr>
+                `).join('');
+
+                provBody.innerHTML += `
+                <tr class="cursor-pointer" data-bs-toggle="collapse" data-bs-target="#${rowId}">
+                    <td class="ps-4 fw-bold text-primary-theme d-flex justify-content-between align-items-center">
+                        ${p.name}
+                        <span class="small text-muted">▼</span>
+                    </td>
+                    <td class="text-end text-secondary">${p.count}</td>
+                    <td class="text-end fw-bold text-accent pe-4">${p.total_ghost_votes.toLocaleString()}</td>
+                </tr>
+                <tr class="collapse detail-row" id="${rowId}">
+                    <td colspan="3" class="p-0">
+                        <div class="p-3 border-bottom">
+                            <table class="table table-sm detail-table mb-0">
+                                <thead><tr><th class="ps-4">เขต</th><th>ส.ส. ชนะ (และเบอร์ที่ซ้ำ)</th><th class="text-end">คะแนนแฝด</th></tr></thead>
+                                <tbody>${areasHtml}</tbody>
+                            </table>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+        }
+
+        // Render MP Parties
+        const mpBody = document.querySelector('#mpPartyTable tbody');
+        if (data.mp_party_stats) {
+            data.mp_party_stats.forEach((p, idx) => {
+                const pInfo = getPartyInfo(p.party_code);
+                const rowId = `mpparty-detail-${idx}`;
+                
+                const provHtml = p.provinces.map(pr => `
+                    <tr>
+                        <td class="ps-4">${pr.name}</td>
+                        <td class="text-end">${pr.count}</td>
+                        <td class="text-end fw-bold theme-accent">${pr.votes.toLocaleString()}</td>
+                    </tr>
+                `).join('');
+
+                mpBody.innerHTML += `
+                <tr class="cursor-pointer" data-bs-toggle="collapse" data-bs-target="#${rowId}">
+                    <td class="ps-4">
+                        <div class="d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center">
+                                <img src="img/${p.party_code}.webp" class="party-logo-sm me-2" onerror="this.style.display='none'">
+                                <span class="fw-bold text-primary-theme">${pInfo.name}</span>
+                            </div>
+                            <span class="small text-muted">▼</span>
+                        </div>
+                    </td>
+                    <td class="text-end text-secondary">${p.count}</td>
+                    <td class="text-end fw-bold text-accent pe-4">${p.total_ghost_votes.toLocaleString()}</td>
+                </tr>
+                <tr class="collapse detail-row" id="${rowId}">
+                    <td colspan="3" class="p-0">
+                         <div class="p-3 border-bottom">
+                            <table class="table table-sm detail-table mb-0">
+                                <thead><tr><th class="ps-4">จังหวัด</th><th class="text-end">จำนวนเขต</th><th class="text-end">คะแนนแฝด</th></tr></thead>
+                                <tbody>${provHtml}</tbody>
+                            </table>
+                        </div>
+                    </td>
+                </tr>`;
+            });
+        }
+    }
+
+    function renderPartySummary(anomalies) {
+        const partyStats = {};
+        anomalies.forEach(a => {
+            if (!partyStats[a.pl_twin_party]) {
+                partyStats[a.pl_twin_party] = {
+                    code: a.pl_twin_party,
+                    count: 0,
+                    votes: 0
+                };
+            }
+            partyStats[a.pl_twin_party].count++;
+            partyStats[a.pl_twin_party].votes += a.pl_twin_votes;
+        });
+
+        const sortedParties = Object.values(partyStats).sort((a,b) => b.votes - a.votes);
+        const top5 = sortedParties.slice(0, 10);
+        const tableBody = document.querySelector('#partySummaryTable tbody');
+        
+        // Clear existing rows if any
+        tableBody.innerHTML = '';
+
+        top5.forEach((p, index) => {
+            const pInfo = getPartyInfo(p.code);
+            const avg = Math.round(p.votes / p.count);
+            
+            const row = `<tr>
+                <td class="text-center fw-bold text-secondary">${index + 1}</td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <img src="img/${p.code}.webp" class="party-logo-md me-2" onerror="this.style.display='none'">
+                        <span class="fw-bold text-primary-theme">${pInfo.name}</span>
+                    </div>
+                </td>
+                <td class="text-end text-secondary">${p.count.toLocaleString()}</td>
+                <td class="text-end fw-bold text-accent">${p.votes.toLocaleString()}</td>
+                <td class="text-end text-secondary">${avg.toLocaleString()}</td>
+            </tr>`;
+            tableBody.innerHTML += row;
+        });
+    }
+
+    function renderTableBatch() {
+        const tableBody = document.querySelector('#anomalyTable tbody');
+        const nextBatch = allAnomalies.slice(displayedCount, displayedCount + ITEMS_PER_PAGE);
+        
+        nextBatch.forEach(a => {
+            const mpParty = getPartyInfo(a.mp_winner_party);
+            const plParty = getPartyInfo(a.pl_twin_party);
+            const location = getProvinceName(a.area_code);
+
+            const row = `<tr>
+                <td class="ps-4">
+                    <div class="fw-bold text-dark">${location}</div>
+                    <div class="small text-secondary">รหัสเขต ${a.area_code}</div>
+                </td>
+                <td>
+                    <div class="fs-5 fw-bold text-primary-theme">เบอร์ ${a.mp_winner_number}</div>
+                    <div class="d-flex align-items-center">
+                         <img src="img/${a.mp_winner_party}.webp" class="party-logo-sm me-1" onerror="this.style.display='none'"> 
+                         <span class="small text-secondary">${mpParty.name}</span>
+                    </div>
+                </td>
+                <td class="highlight-anomaly">
+                    <div class="fs-5 fw-bold text-accent">เบอร์ ${a.mp_winner_number}</div>
+                    <div class="d-flex align-items-center">
+                        <img src="img/${a.pl_twin_party}.webp" class="party-logo-sm me-1" onerror="this.style.display='none'"> 
+                        <span class="small fw-bold text-dark">${plParty.name}</span>
+                    </div>
+                </td>
+                <td><span class="badge badge-rank border text-accent">${a.pl_twin_rank}</span></td>
+                <td class="fw-bold text-accent">${a.pl_twin_votes.toLocaleString()}</td>
+                <td>
+                    <div class="fw-bold text-danger">+${(a.excess_votes || 0).toLocaleString(undefined, {maximumFractionDigits: 0})}</div>
+                    <div class="small text-muted">+${(a.pct_increase || 0).toFixed(0)}%</div>
+                </td>
+            </tr>`;
+            tableBody.innerHTML += row;
+        });
+
+        displayedCount += nextBatch.length;
+        
+        const btn = document.getElementById('loadMoreBtn');
+        if (displayedCount >= allAnomalies.length) {
+            btn.style.display = 'none';
+        } else {
+            btn.style.display = 'inline-block';
+            btn.textContent = `โหลดข้อมูลเพิ่มเติม (แสดง ${displayedCount} จาก ${allAnomalies.length})`;
+        }
+    }
+
+    function renderDashboard(data) {
+        const anomalies = data.anomalies;
+        
+        // 1. Stats
+        document.getElementById('total-anomalies').textContent = anomalies.length;
+        document.getElementById('max-votes').textContent = Math.max(...anomalies.map(a => a.pl_twin_votes)).toLocaleString();
+
+        // Calculate counts by NUMBER (not party) as requested
+        const numberCounts = {};
+        anomalies.forEach(a => {
+            const num = a.mp_winner_number;
+            numberCounts[num] = (numberCounts[num] || 0) + 1;
+        });
+        
+        // Find top PARTY for the stat box (still useful context)
+        const partyCounts = {};
+        anomalies.forEach(a => { partyCounts[a.pl_twin_party] = (partyCounts[a.pl_twin_party] || 0) + 1; });
+        const topPartyCode = Object.entries(partyCounts).sort((a,b) => b[1] - a[1])[0];
+        
+        if (topPartyCode) {
+            const pInfo = getPartyInfo(topPartyCode[0]);
+            document.getElementById('top-party').innerHTML = `${pInfo.name}<br><span style="font-size:0.6em; color: var(--accent-color)">(${topPartyCode[1]} เขต)</span>`;
+        } else {
+            document.getElementById('top-party').textContent = '-';
+        }
+        
+        // Setup Chart Defaults
+        Chart.defaults.font.family = "'Sarabun', -apple-system, sans-serif";
+        Chart.defaults.color = "#14213d";
+
+        // 2. Chart: Top 10 Areas by Ghost Votes
+        const top10 = anomalies.slice(0, 10);
+        new Chart(document.getElementById('topAreaChart'), {
+            type: 'bar',
+            data: {
+                labels: top10.map(a => {
+                    const prov = getProvinceName(a.area_code);
+                    return prov; // Simplified label
+                }),
+                datasets: [{
+                    label: 'คะแนนพรรคแฝด',
+                    data: top10.map(a => a.pl_twin_votes),
+                    // Use Number-based colors
+                    backgroundColor: top10.map(a => numberColors[a.mp_winner_number] || '#666'), 
+                    borderColor: 'rgba(0,0,0,0.1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(20, 33, 61, 0.9)',
+                        titleFont: { size: 14, family: 'Sarabun' },
+                        bodyFont: { size: 13, family: 'Sarabun' },
+                        padding: 12,
+                        callbacks: {
+                            // Enhanced Tooltip
+                            title: (items) => {
+                                const index = items[0].dataIndex;
+                                return `${getProvinceName(top10[index].area_code)}`;
+                            },
+                            label: (context) => {
+                                return `คะแนนพรรคแฝด: ${context.raw.toLocaleString()}`;
+                            },
+                            afterLabel: (context) => {
+                                const index = context.dataIndex;
+                                const item = top10[index];
+                                const mpP = getPartyInfo(item.mp_winner_party);
+                                const plP = getPartyInfo(item.pl_twin_party);
+                                return [
+                                    `--------------------------`,
+                                    `🏆 ส.ส. เขต: เบอร์ ${item.mp_winner_number} (${mpP.name})`,
+                                    `� พรรคแฝด: เบอร์ ${item.mp_winner_number} (${plP.name})`,
+                                    `อันดับคะแนนแฝด: ที่ ${item.pl_twin_rank}`
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: { y: { beginAtZero: true, title: { display: true, text: 'คะแนน' } } }
+            }
+        });
+
+        // 3. Chart: Doughnut by NUMBER (1, 2, 3...)
+        const sortedNumbers = Object.keys(numberCounts).sort((a,b) => numberCounts[b] - numberCounts[a]);
+        
+        new Chart(document.getElementById('numberDistChart'), {
+            type: 'doughnut',
+            data: {
+                labels: sortedNumbers.map(n => `เบอร์ ${n}`),
+                datasets: [{
+                    data: sortedNumbers.map(n => numberCounts[n]),
+                    backgroundColor: sortedNumbers.map(n => numberColors[n] || '#ccc'),
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right', labels: { font: { family: 'Sarabun' } } },
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => ` พบ ${ctx.raw} เขต (${((ctx.raw/anomalies.length)*100).toFixed(1)}%)`
+                        }
+                    }
+                } 
+            }
+        });
+
+        // 4. Render Correlation Scatter Plot
+        renderCorrelationChart(anomalies);
+    }
+
+    function renderCorrelationChart(anomalies) {
+        const scatterData = anomalies.map(a => ({
+            x: a.mp_votes,
+            y: a.pl_twin_votes,
+            r: 5, // Radius
+            // Custom data for tooltip
+            _area: getProvinceName(a.area_code),
+            _number: a.mp_winner_number,
+            _mpParty: getPartyInfo(a.mp_winner_party).name,
+            _plParty: getPartyInfo(a.pl_twin_party).name
+        }));
+
+        // Calculate Linear Regression (Trend Line)
+        const n = scatterData.length;
+        let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+        scatterData.forEach(p => {
+            sumX += p.x;
+            sumY += p.y;
+            sumXY += p.x * p.y;
+            sumXX += p.x * p.x;
+        });
+
+        const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+        const intercept = (sumY - slope * sumX) / n;
+
+        // Generate points for line
+        const minX = Math.min(...scatterData.map(d => d.x));
+        const maxX = Math.max(...scatterData.map(d => d.x));
+        const trendData = [
+            { x: minX, y: slope * minX + intercept },
+            { x: maxX, y: slope * maxX + intercept }
+        ];
+
+        new Chart(document.getElementById('correlationChart'), {
+            type: 'scatter',
+            data: {
+                datasets: [
+                    {
+                    label: 'เขตที่พบเบอร์แฝด',
+                        data: scatterData,
+                        backgroundColor: (ctx) => {
+                            const raw = ctx.raw;
+                            if(!raw) return '#666';
+                            return numberColors[raw._number] || '#666';
+                        },
+                        pointHoverRadius: 8
+                    },
+                    {
+                        type: 'line',
+                        label: 'แนวโน้ม (Trend Line)',
+                        data: trendData,
+                        borderColor: 'rgba(50, 50, 50, 0.5)',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0,
+                        fill: false
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: {
+                        callbacks: {
+                            label: (ctx) => {
+                                const raw = ctx.raw;
+                                if(ctx.dataset.type === 'line') return `Trend`;
+                                return `${raw._area}: MP ${raw.x.toLocaleString()} vs PL ${raw.y.toLocaleString()}`;
+                            },
+                            afterLabel: (ctx) => {
+                                const raw = ctx.raw;
+                                if(ctx.dataset.type === 'line') return;
+                                return `เบอร์ ${raw._number} (MP: ${raw._mpParty} / PL: ${raw._plParty})`;
+                            }
+                        }
+                    },
+                    legend: { position: 'bottom' }
+                },
+                scales: {
+                    x: {
+                        type: 'linear',
+                        position: 'bottom',
+                        title: { display: true, text: 'คะแนนที่ ส.ส. เขตได้รับ (MP Votes)' }
+                    },
+                    y: {
+                        title: { display: true, text: 'คะแนนบัญชีรายชื่อเบอร์แฝด' }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderLuckyNumberChart(parties) {
+        // Exclude specific large parties to see the baseline trend better
+        const excludedNumbers = [6, 9, 11, 27, 33, 37, 42, 46];
+        const filteredParties = parties.filter(p => !excludedNumbers.includes(p.party_number));
+
+        // Sort by Party Number
+        filteredParties.sort((a,b) => a.party_number - b.party_number);
+        
+        const labels = filteredParties.map(p => p.party_number);
+        const data = filteredParties.map(p => p.total_votes);
+        const bgColors = filteredParties.map(p => {
+            if (p.party_number <= 15) return '#fca311'; // Lucky Number (Accent) - Expanded to 1-15
+            return '#e5e5e5'; // Normal
+        });
+
+        new Chart(document.getElementById('luckyNumberChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'คะแนนบัญชีรายชื่อรวมทั้งประเทศ',
+                    data: data,
+                    backgroundColor: bgColors,
+                    borderRadius: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            title: (item) => `เบอร์ ${item[0].label}`,
+                            label: (ctx) => {
+                                const p = filteredParties[ctx.dataIndex];
+                                const pInfo = getPartyInfo(p.party_code);
+                                return `${pInfo.name}: ${ctx.raw.toLocaleString()} คะแนน`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        title: { display: true, text: 'หมายเลขพรรค (ยกเว้นเบอร์ 6, 9, 11, 27, 33, 37, 42, 46)' },
+                        grid: { display: false }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'คะแนนรวม (Votes)' }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderRatioChart(parties) {
+        // Filter for Lucky Number Group (1-15) excluding big ones (6, 9, 11)
+        const targetParties = parties.filter(p => 
+            p.party_number >= 1 && 
+            p.party_number <= 15 && 
+            ![6, 9, 11].includes(p.party_number)
+        );
+        targetParties.sort((a,b) => a.party_number - b.party_number);
+
+        const labels = targetParties.map(p => `เบอร์ ${p.party_number}`);
+        const plData = targetParties.map(p => p.pl_total_votes);
+        const mpData = targetParties.map(p => p.mp_total_votes);
+
+        new Chart(document.getElementById('ratioChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'คะแนนบัญชีรายชื่อ (PL)',
+                        data: plData,
+                        backgroundColor: '#fca311', // Orange
+                        borderRadius: 2
+                    },
+                    {
+                        label: 'คะแนนเขต (MP)',
+                        data: mpData,
+                        backgroundColor: '#14213d', // Navy
+                        borderRadius: 2
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: {
+                         callbacks: {
+                            afterBody: (items) => {
+                                const idx = items[0].dataIndex;
+                                const p = targetParties[idx];
+                                const pInfo = getPartyInfo(p.party_code);
+                                return [
+                                    `พรรค: ${pInfo.name}`,
+                                    `อัตราส่วน (PL/MP): ${p.ratio} เท่า`
+                                ];
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'คะแนนเสียง (Votes)' }
+                    },
+                     x: {
+                        title: { display: true, text: 'พรรคเบอร์ 1–15 (ยกเว้น 6, 9, 11)' }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderForgottenCandidates(anomalies) {
+        // Filter criteria:
+        // 1. Has real MP candidate (mp_twin_candidate_votes > 0)
+        // 2. High ratio (PL >> MP)
+        
+        const candidates = anomalies.filter(a => a.mp_twin_candidate_votes > 0);
+        
+        // Calculate Ratio on the fly
+        candidates.forEach(c => {
+            c._ratio = c.pl_twin_votes / c.mp_twin_candidate_votes;
+        });
+
+        // Filter ratio > 1.5
+        const ratioThreshold = 1.5;
+        const filteredCandidates = candidates.filter(c => c._ratio >= ratioThreshold);
+
+        // Sort by Ratio DESC
+        filteredCandidates.sort((a,b) => b._ratio - a._ratio);
+
+        const tbody = document.querySelector('#forgottenTable tbody');
+        tbody.innerHTML = '';
+
+        const initialShow = 10;
+        
+        const renderRows = (limit) => {
+            tbody.innerHTML = '';
+            filteredCandidates.slice(0, limit).forEach(c => {
+                const twinPInfo = getPartyInfo(c.pl_twin_party);
+                
+                const ratioClass = c._ratio > 50 ? 'text-danger fw-bold' : (c._ratio > 10 ? 'text-warning fw-bold' : '');
+                
+                const tr = `<tr>
+                    <td>
+                        <div class="fw-bold">${getProvinceName(c.area_code)}</div>
+                        <span class="small text-muted">รหัส ${c.area_code}</span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <img src="img/${c.pl_twin_party}.webp" class="party-logo-sm me-2" onerror="this.style.display='none'">
+                            <div>
+                                <div class="fw-bold">${twinPInfo.name}</div>
+                                <span class="badge bg-secondary">เบอร์ ${c.mp_winner_number}</span> 
+                                <span class="small text-muted ms-1">(ตรงผู้ชนะ)</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-end">
+                        <div class="text-muted fw-bold">${c.mp_twin_candidate_votes.toLocaleString()}</div>
+                    </td>
+                    <td class="text-end">
+                        <div class="text-primary fw-bold">${c.pl_twin_votes.toLocaleString()}</div>
+                    </td>
+                    <td class="text-end">
+                        <span class="${ratioClass}">${c._ratio.toFixed(1)}x</span>
+                    </td>
+                </tr>`;
+                tbody.innerHTML += tr;
+            });
+        };
+
+        renderRows(initialShow);
+
+        // Handle button
+        const btn = document.getElementById('btnShowMoreForgotten');
+        if (candidates.length <= initialShow) {
+            btn.style.display = 'none';
+        } else {
+            btn.onclick = () => {
+                if(btn.innerText === 'แสดงเพิ่มเติม') {
+                    renderRows(50); // Show top 50
+                    btn.innerText = 'ย่อรายการ';
+                } else {
+                    renderRows(initialShow);
+                    btn.innerText = 'แสดงเพิ่มเติม';
+                }
+            };
+        }
+    }
+
+    function renderWeakWinnerPL(anomalies) {
+        // Filter: Twin PL Votes > Winner PL Votes
+        // We need mp_winner_pl_votes. If data is old, this might be undefined, so handle fallback
+        const weakWinners = anomalies.filter(a => (a.mp_winner_pl_votes || 0) > 0 && a.pl_twin_votes > a.mp_winner_pl_votes);
+        
+        // Sort by diff
+        weakWinners.sort((a,b) => (b.pl_twin_votes - b.mp_winner_pl_votes) - (a.pl_twin_votes - a.mp_winner_pl_votes));
+        
+        const tbody = document.querySelector('#weakWinnerTable tbody');
+        tbody.innerHTML = '';
+        
+        const limit = 10;
+        if (weakWinners.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center py-3 text-secondary">ไม่พบข้อมูลที่เข้าเกณฑ์</td></tr>';
+            return;
+        }
+
+        weakWinners.slice(0, limit).forEach(a => {
+            const loc = getProvinceName(a.area_code);
+            const winP = getPartyInfo(a.mp_winner_party);
+            const twinP = getPartyInfo(a.pl_twin_party);
+            const diff = a.pl_twin_votes - a.mp_winner_pl_votes;
+            
+            const row = `<tr>
+                <td><div class="fw-bold">${loc}</div><small class="text-secondary">${a.area_code}</small></td>
+                <td>
+                    <div class="fw-bold text-primary-theme">${winP.name}</div>
+                    <div class="badge bg-light text-dark border">เบอร์ ${a.mp_winner_number}</div>
+                </td>
+                <td class="text-end fw-bold text-dark border-end bg-light">${a.mp_votes.toLocaleString()}</td>
+                <td class="text-end text-secondary">${(a.mp_winner_pl_votes||0).toLocaleString()}</td>
+                <td class="text-end">
+                    <div class="fw-bold text-danger">${a.pl_twin_votes.toLocaleString()}</div>
+                    <small class="text-muted" style="font-size:0.8em">${twinP.name}</small>
+                </td>
+                <td class="text-end fw-bold text-danger">-${diff.toLocaleString()}</td>
+            </tr>`;
+            tbody.innerHTML += row;
+        });
+    }
+
+
+    // Call loadData immediately
+    loadData();
+</script>
+
+</body>
+</html>
